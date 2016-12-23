@@ -5,13 +5,12 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
 
-import java.security.KeyStore;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
+import java.security.KeyStore;
 
 public class LocalAndroidKeyStore {
 
@@ -43,14 +42,25 @@ public class LocalAndroidKeyStore {
         }
     }
 
-    FingerprintManager.CryptoObject getCryptoObject(int purpose, byte[] IV) {
+    SecretKey getSecretKey() {
         try {
             mStore.load(null);
             final SecretKey key = (SecretKey) mStore.getKey(keyName, null);
+            return key;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    FingerprintManager.CryptoObject getCryptoObject(int purpose, byte[] IV) {
+        try {
+            SecretKey key = getSecretKey();
             if (key == null) {
                 return null;
             }
-            final Cipher cipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC
+            final Cipher cipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties
+                    .BLOCK_MODE_CBC
                     + "/" + KeyProperties.ENCRYPTION_PADDING_PKCS7);
             if (purpose == KeyProperties.PURPOSE_ENCRYPT) {
                 cipher.init(purpose, key);
@@ -75,7 +85,8 @@ public class LocalAndroidKeyStore {
             SecretKeyFactory factory = SecretKeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
             KeyInfo keyInfo;
             keyInfo = (KeyInfo) factory.getKeySpec(key, KeyInfo.class);
-            return keyInfo.isInsideSecureHardware() && keyInfo.isUserAuthenticationRequirementEnforcedBySecureHardware();
+            return keyInfo.isInsideSecureHardware() && keyInfo
+                    .isUserAuthenticationRequirementEnforcedBySecureHardware();
         } catch (Exception e) {
             // Not an Android KeyStore key.
             return false;
